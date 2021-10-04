@@ -23,10 +23,20 @@ def getmeme(topic): # Topic/Subreddit name
                     client_secret=REDDIT_SCT,
                     user_agent='meme') # Initializing details
 
-    submission = reddit.subreddit(topic).random()
-    return submission.url
+    submission = reddit.subreddit(topic)
+    return submission.title, submission.url
 
 # ---------------------------------------------------------------------------------------
+
+REDDIT_CID = os.getenv('REDDIT_CID')
+REDDIT_SCT = os.getenv('REDDIT_SCT')
+TKEY = os.getenv("TENOR_KEY")
+
+def drt(limit):
+    import random
+    password = random.randint(10000, 30000)
+    return str(password)
+
 
 # GIFs for Damn Son react
 dms = ["https://giphy.com/gifs/batman-film-qVID3J8fLrlZK", "https://giphy.com/gifs/homer-simpson-barney-batman-and-robin-pSFEEQMaNcFAQ", "https://giphy.com/gifs/hug-5sos-5-seconds-of-summer-BcOvvS5t0sxnG", 'https://giphy.com/gifs/joker-the-joaquin-phoenix-A7ZbCuv0fJ0POGucwV']
@@ -98,6 +108,92 @@ async def on_ready():
 async def on_member_join(member):
     print(f'{member} has joined the server' )
 
+import wikipedia 
+
+@client.command()
+async def wiki(ctx, *, cont):
+    """Search Wikipedia"""
+    try:
+        results = wikipedia.summary(cont, sentences=2) 
+        await ctx.send(results)
+    except Exception:
+        await ctx.send('Page not found')
+
+import pyjokes
+
+@client.command()
+async def joke(ctx):
+    '''Uhh..... get a joke?'''
+    jk=pyjokes.get_joke(language='en', category= 'neutral')
+    await ctx.send(jk)
+
+@client.command()
+async def lyrics(ctx, *, song):
+    from lyrics_extractor import SongLyrics
+
+    sc = SongLyrics('AIzaSyCBc9vGiM-q0dIOpt0mSIdhraUGiF1pU_U', '2c0e4a26e5d598f41')
+    js = sc.get_lyrics(
+        song
+    )
+    em = discord.Embed(title=js["title"], description=js["lyrics"], color=discord.Color.dark_blue())
+    await ctx.send(embed=em)
+
+
+@client.command()
+async def addrole(ctx, member : discord.Member, role : discord.Role):
+    print(role)
+    await member.add_roles(role)
+
+@client.command()
+async def verify(ctx):
+# Import the following modules
+    from captcha.image import ImageCaptcha
+    image = ImageCaptcha(width = 280, height = 90)
+    captcha_text = str(random.randint(20000,30000))
+    print(captcha_text)
+    data = image.generate(captcha_text)  
+    image.write(captcha_text, 'CAPTCHA.png')   
+    img = discord.File("CAPTCHA.png")
+    await ctx.send("Solve this Captcha:",file=img)
+    def check(msg):
+        return msg.author == ctx.author and msg.channel == ctx.channel
+
+    msg = await client.wait_for("message", check=check)
+    print(msg.content)
+    if int(msg.content.lower()) == int(captcha_text):
+        member = ctx.author
+        role = ctx.guild.get_role(852462898931564544)
+        print(str(role))
+        await ctx.author.add_roles(role)
+        await ctx.send(f"Hi there, Welcome to {ctx.guild.name}")
+    else:
+        await ctx.send("Verification Failed, try again!")
+
+@client.command()
+async def google(ctx, *, query):
+    '''Search Google from here, not from Browser'''
+    from googlesearch import search # pip install google, bs4
+    for j in search(query, tld="co.in", num=1, stop=1, pause=2):
+        await ctx.send(j)
+
+def getmeme(topic): # Topic/Subreddit name
+    reddit = praw.Reddit(client_id=REDDIT_CID,
+                    client_secret=REDDIT_SCT,
+                    user_agent='meme') # Initializing details
+
+    submission = reddit.subreddit(topic).random() #finding a random post in the given subreddit
+    return submission.url
+
+@client.command()
+async def meme(ctx):
+    await ctx.send(getmeme("memes"))
+
+@client.command()
+async def gif(ctx, *, cont):
+    import TenGiphPy
+    t = TenGiphPy.Tenor(token=TKEY)
+    await ctx.send(t.random(cont))
+
 @client.command(aliases=["hi"])
 async def hello(ctx):
     await ctx.send(f"Hello {ctx.author.mention}")
@@ -122,15 +218,11 @@ async def sus(ctx):
 async def damnson(ctx):
     await ctx.send(choice(dms))
 
+
 @client.command()
 async def quote(ctx):
     q, a = get_quote()
     em = discord.Embed(title=a+" once said", description=q, color=discord.Color.blue())
-    await ctx.send(embed=em)
-
-@client.command()
-async def irondora(ctx):
-    em = discord.Embed(description=f'In Linux World, major companies like Red Hat and Canonicals are not really favoured because they sometime or the other take pretty bad decisions which take long to heal cuz after all, it\'s not a community maintained distro anymore. \n\n A thing that really upsets me about this situation is the report filed against KDocker upstream never included (by Richard) a link to the Fedora bug, it also never included the Fedora packagers. It was only Richard making demands for his pet specification he’s trying to push onto people.\nFedora should not be dictating special requirements only for themselves to upstream developers. If this matter is important then they should be the ones to contribute it to upstream. Again no other distro uses or needs this file as far as I’m aware. It would be another story if multiple distros used this file like the .desktop file. So, no I’m not going to create a special file just for Fedora. If they want this file then they can contribute it.\n\n', color = discord.Color.red())
     await ctx.send(embed=em)
 
 @client.command()
@@ -212,6 +304,62 @@ In that sense, Debian and Arch Linux are more pure community-driven projects. It
         except asyncio.TimeoutError:
             await message.delete()
             break
+
+import cv2
+
+def cartoonify(img):
+  
+  gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
+  gray = cv2.medianBlur(gray, 7) 
+  edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 10)
+  # Making a Cartoon of the image
+  color = cv2.bilateralFilter(img, 12, 250, 250) 
+  cartoon = cv2.bitwise_and(color, color, mask=edges)
+  cartoon_image = cv2.stylization(img, sigma_s=150, sigma_r=0.25)  
+  return cartoon_image
+import numpy as np
+@client.command()
+async def cartoon(ctx, member: discord.Member = None):
+	if member is None:
+		a = str(ctx.author.avatar_url_as(format="jpg"))
+
+		req = requests.get(a).content
+
+		arr = np.asarray(bytearray(req), dtype=np.uint8)
+
+		img = cv2.imdecode(arr, -1)
+		img = cv2.resize(img, (400, 400))
+		cartoon = cartoonify(img)
+		cv2.imwrite('cartoon.jpg', cartoon)
+		
+
+		file = discord.File("cartoon.jpg")
+
+		embed = discord.Embed(title="Profile Picture : {}".format(
+		    ctx.author.name),
+		                      color=discord.Color.blue())
+		embed.set_image(url="attachment://cartoon.jpg")
+
+	else:
+		a = str(member.avatar_url)
+		req = requests.get(a).content
+
+		arr = np.asarray(bytearray(req), dtype=np.uint8)
+
+		img = cv2.imdecode(arr, -1)
+
+		img = cv2.resize(img, (400, 400))
+		cartoon = cartoonify(img)
+		cv2.imwrite('cartoon.jpg', cartoon)
+		
+		file = discord.File("cartoon.jpg")
+
+		embed = discord.Embed(title="Profile Picture : {}".format(
+		    ctx.author.name),
+		                      color=discord.Color.blue())
+		embed.set_image(url="attachment://cartoon.jpg")
+
+	await ctx.send(file=file, embed=embed)
 
 @client.command()
 async def archinstall(ctx):
@@ -652,8 +800,113 @@ There are a number of distro communities (including Arch) that are known for not
             break
 
 @client.command()
+async def whyfedora(ctx):
+    contents = ['''**Fedora is Bleeding Edge**
+The Fedora Operating System is called a bleeding edge Linux distribution because it is always rolling out with the latest software, driver updates, and Linux features. This contributes to the reason why you can confidently use Fedora as soon as installation is complete – it ships with the latest stable kernel along with all its benefits.
+
+For example, Fedora is the first major distribution to use systemd as its default init system and the first major distro to use Wayland as its default display server protocol.''', '''**A Good Community**
+Fedora has one of the biggest communities in the world with a forum populated by many users who will happily help you sort out any issues that might have you stuck while using the distro.
+
+This is separate from the Fedora IRC channel and the large Reddit community which you can also access for free to learn from other users and share experiences.''', '''**Better Package Management**
+Unlike Debian and Ubuntu which use dpkg with an apt official front-end, Fedora uses RPM package manager with a dnf front-end and RPM packages are typically easier to build. RPM also has more features than dpkg such as confirmation of installed packages, history and rollback, etc.''', '''**A Unique Gnome Experience**
+The Fedora project works closely with the Gnome Foundation thus Fedora always gets the latest Gnome Shell release and its users begin to enjoy its newest features and integration’s before users of other distros do.''', '''**Top-Level Security**
+Linux users enjoy top good security thanks to the Linux kernel underlying every distro but Fedora developers have gone further to embed advanced security features within the distro via the Security-Enhanced Linux (SELinux) module.
+
+SELinux is a Linux kernel security module that enables support for accessing security policies e.g. managing permission rights. You can read more about SELinux here.''', '''**Prolific Hardware Support**
+Fedora enjoys many benefits thanks to the communities backing it and a good example is how readily Fedora will work on PCs, with printers, scanners, cameras, etc. from different vendors straight out of the box. If you want a Linux distro that wouldn’t give you any compatibility headaches then Fedora is a good choice.''', '''**Fedora is Easy to Use**
+The most common Linux distros are well-known for their ease of use and Fedora is among the easiest distributions to use. Its simple User Interface is simple enough for anyone to boot up for the first time and get used to after a couple of clicks and all of its software offer the same User Experience which gives users a feeling of consistency and familiarity.''', '''Memetime!''']
+    pages = len(contents)
+    cur_page = 1
+    em=discord.Embed(description=f"{contents[cur_page-1]}", color=discord.Color.blue())
+    message = await ctx.send(embed=em)
+    # getting the message object for editing and reacting
+
+    await message.add_reaction("◀️")
+    await message.add_reaction("▶️")
+
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+        # This makes sure nobody except the command sender can interact with the "menu"
+
+    while True:
+        try:
+            reaction, user = await client.wait_for("reaction_add", timeout=10000, check=check)
+
+            if str(reaction.emoji) == "▶️" and cur_page != pages:
+                cur_page += 1
+                if cur_page==8:
+                    em=discord.Embed(description=f"{contents[cur_page-1]}", color=discord.Color.blue())
+                    em.set_image(url="https://i.pinimg.com/originals/b5/5d/53/b55d538e6641ecd14e560377e97e0e2e.jpg")
+                    em.set_footer(text="Source: ItsFoss")
+                else:
+                    em=discord.Embed(description=f"{contents[cur_page-1]}", color=discord.Color.blue())
+                
+                await message.edit(embed=em)
+                await message.remove_reaction(reaction, user)
+
+            elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                cur_page -= 1
+                if cur_page==8:
+                    em=discord.Embed(description=f"{contents[cur_page-1]}", color=discord.Color.blue())
+                    em.set_image(url="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fi.redd.it%2F9aj95rwqdex41.jpg&f=1&nofb=1")
+                else:
+                    em=discord.Embed(description=f"{contents[cur_page-1]}", color=discord.Color.blue())
+                
+                await message.edit(embed=em)
+                await message.remove_reaction(reaction, user)
+
+            else:
+                await message.remove_reaction(reaction, user)
+                # removes reactions if the user tries to go forward on the last page or
+                # backwards on the first page
+        except asyncio.TimeoutError:
+            await message.delete()
+            break
+
+# @client.command()
+# async def roleselect():
+
+@client.command()
+async def poll(ctx, opt1, opt2, *, message):
+    em = discord.Embed(title=message, description=f"{ctx.author.name} asks\n\n1. {opt1}\n2. {opt2}", color=discord.Color.blue())
+    msg = await ctx.send(embed=em);
+    await msg.add_reaction("1️⃣")
+    await msg.add_reaction("2️⃣")
+
+@client.command()
 async def yt(ctx, *, url):
     await ctx.send(searchyt(url))
+
+import pyjokes
+
+
+@client.command()
+async def getinv(ctx):
+    invite = ctx.channel.create_invite()
+    await ctx.send(f"Here's your invite:\n {invite}")
+
+@client.command()
+async def ping(ctx, num:int, user:discord.Member):
+        i=0
+        if num>20:
+            await ctx.send("Ugh man it's enough!")
+        else:
+            while i<num:
+                await ctx.send(user.mention)
+                i+=1
+
+@client.command()
+async def gayrate(ctx, user:discord.Member):
+    pr= random.randint(1, 100)
+    em = discord.Embed(description=f"{user.name} is {pr}% gay\n:rainbow_flag: :thinking:", color=discord.Color.red())
+    await ctx.send(embed=em)
+
+# @client.command()
+# async def google(ctx, *, query):
+#     from googlesearch import search
+#     for j in search(query, tld="co.in", num=1, stop=1, pause=2):
+#         await ctx.send(j)
+
 
 client.remove_command('help')
 exts=['music']
@@ -799,6 +1052,18 @@ async def place_error(ctx, error):
     elif isinstance(error, commands.BadArgument):
         await ctx.send("Please make sure to enter an integer.")
 
+@client.command(aliases=['chat'])
+async def c(ctx, *, cont):
+    from prsaw import RandomStuff # pip install prsaw
+    rs = RandomStuff(async_mode=True,api_key=os.getenv("cbapi"))
+    res = await rs.get_ai_response(cont);
+    await rs.close()
+    await ctx.send(res[0]["message"])
+
+@client.command()
+async def ban(ctx, un: discord.Member, *, reason):
+    un.ban(reason=reason)
+    print(f"{un} was banned!")
 keep_alive()
 import os
 client.run(os.getenv("tk"))

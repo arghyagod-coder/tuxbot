@@ -90,9 +90,7 @@ class Help(commands.Cog):
                 emb.add_field(name='Not belonging to a module', value=commands_desc, inline=False)
 
             # setting information about author
-            emb.add_field(name="About", value=f"The Bots is developed by Chriѕ#0001, based on discord.py.\n\
-                                    This version of it is maintained by {owner}\n\
-                                    Please visit https://github.com/nonchris/discord-fury to submit ideas or bugs.")
+            emb.add_field(name="About", value=f"Tux is developed by Arghya Sarkar \"JAY\"")
             emb.set_footer(text=f"Bot is running {version}")
 
         # block called when one cog-name is given

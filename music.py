@@ -474,6 +474,8 @@ class MusicPlayer(commands.Cog, name='Music'):
         if msg.author.voice is None:
             return await msg.send("You must be in the same voice channel as bot to disconnect it via command")
 
+    
+
     @commands.has_permissions(manage_channels=True)
     @command()
     async def pause(self, msg):
