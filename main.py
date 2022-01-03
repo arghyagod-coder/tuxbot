@@ -31,6 +31,9 @@ def getmeme(topic): # Topic/Subreddit name
 REDDIT_CID = os.getenv('REDDIT_CID')
 REDDIT_SCT = os.getenv('REDDIT_SCT')
 TKEY = os.getenv("TENOR_KEY")
+RMKEY = os.getenv("rmkey")
+
+
 
 def drt(limit):
     import random
@@ -144,6 +147,7 @@ async def addrole(ctx, member : discord.Member, role : discord.Role):
     print(role)
     await member.add_roles(role)
 
+
 @client.command()
 async def verify(ctx):
 # Import the following modules
@@ -224,6 +228,10 @@ async def quote(ctx):
     q, a = get_quote()
     em = discord.Embed(title=a+" once said", description=q, color=discord.Color.blue())
     await ctx.send(embed=em)
+
+@client.command()
+async def sendnudes(ctx):
+    await ctx.send(client.user.avatar_url)
 
 @client.command()
 async def noobuntu(ctx):
@@ -361,6 +369,62 @@ async def cartoon(ctx, member: discord.Member = None):
 
 	await ctx.send(file=file, embed=embed)
 
+@client.command()
+async def removebg(ctx, member: discord.Member = None):
+	if member is None:
+		a = str(ctx.author.avatar_url_as(format="jpg"))
+
+		req = requests.get(a).content
+
+		arr = np.asarray(bytearray(req), dtype=np.uint8)
+        img = cv2.imdecode(arr, -1)
+        img = cv2.resize(img, (400, 400))
+
+        response = requests.post(
+            'https://api.remove.bg/v1.0/removebg',
+            files={'image_file': img},
+            data={'size': 'auto'},
+            headers={'X-Api-Key': RMKEY},
+        )
+        if response.status_code == requests.codes.ok:
+            with open('no-bg.png', 'wb') as out:
+                out.write(response.content)
+        else:
+            print("Error:", response.status_code, response.text)
+
+		file = discord.File("no-bg.jpg")
+
+		embed = discord.Embed(title="Profile Picture : {}".format(
+		    ctx.author.name),
+		                      color=discord.Color.blue())
+		embed.set_image(url="attachment://cartoon.jpg")
+
+	else:
+		a = str(member.avatar_url)
+		req = requests.get(a).content
+
+		arr = np.asarray(bytearray(req), dtype=np.uint8)
+
+		img = cv2.imdecode(arr, -1)
+
+		img = cv2.resize(img, (400, 400))
+		cartoon = cartoonify(img)
+		cv2.imwrite('cartoon.jpg', cartoon)
+		
+		file = discord.File("cartoon.jpg")
+
+		embed = discord.Embed(title="Profile Picture : {}".format(
+		    ctx.author.name),
+		                      color=discord.Color.blue())
+		embed.set_image(url="attachment://cartoon.jpg")
+
+	await ctx.send(file=file, embed=embed)
+
+@client.command()
+async def donatecal(ctx):
+    don = discord.Embed(title = "Support us for our work in Buymeacoffee", description="https://www.buymeacoffee.com/team.calinix")
+    don.set_image(url="https://www.mockofun.com/wp-content/uploads/2020/05/buy-me-a-coffee-logo-6100.jpg")
+    await ctx.send(embed=don)
 @client.command()
 async def archinstall(ctx):
     contents = ["So let's install Arch! It goes pretty simple if you have a guide with you, and I'm here to help you!\n\n**Why use Arch?**\n\nAs it's an awesome linux distribution basically for people to learn linux. It's fully community-maintained and DIY so you have a lot of freedom over your system. \n\nFor more info on why use arch, type `j!whyarch`", """Install the [Arch Linux ISO](https://archlinux.org/download/) from the [Archlinux website](https://archlinux.org/).\n\n**Direct Link for 64 bit machines:** [ArchLinux-64-bit_iso](http://mirror.rackspace.com/archlinux/iso/2021.08.01/archlinux-2021.08.01-x86_64.iso)
@@ -877,6 +941,11 @@ async def poll(ctx, opt1, opt2, *, message):
 async def yt(ctx, *, url):
     await ctx.send(searchyt(url))
 
+@client.command()
+async def aur(ctx, term):
+    rs = aur.search(term)
+    await ctx.send(rs)
+
 import pyjokes
 
 
@@ -1062,8 +1131,18 @@ async def c(ctx, *, cont):
 
 @client.command()
 async def ban(ctx, un: discord.Member, *, reason):
-    un.ban(reason=reason)
+    await un.ban(reason=reason)
     print(f"{un} was banned!")
+
+@client.command()
+@commands.has_permissions(kick_members=True)
+async def kick(ctx, user: discord.Member, *, reason: str):
+  if not reason:
+    await user.kick()
+    await ctx.send(f"**{user}** has been kicked for **no reason**.")
+  else:
+    await user.kick(reason=reason)
+    await ctx.send(f"**{user}** has been kicked for **{reason}**.")
 keep_alive()
 import os
 client.run(os.getenv("tk"))
